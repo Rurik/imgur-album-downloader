@@ -73,10 +73,17 @@ class ImgurAlbumDownloader:
         if not self.response or self.response.getcode() != 200:
             raise ImgurAlbumException("Error reading Imgur: Error Code %d" % response_code)
 
-        # Read in the images now so we can get stats and stuff:
-        html = self.response.read().decode('utf-8')
-        self.imageIDs = re.findall('.*?{"hash":"([a-zA-Z0-9]+)".*?"ext":"(\.[a-zA-Z0-9]+)".*?', html)
+        # Read in the images now so we can get stats and stuff
+        # Requires reading line-by-line now as imgur has two identical sections for 'items' and 'images'
+        # Results were previously being duplicated
+        html = self.response.readlines()
         
+        for line in html:
+            if re.match('^ *image *\: ', line):
+                print(line)
+                self.imageIDs = re.findall('.*?{"hash":"([a-zA-Z0-9]+)".*?"ext":"(\.[a-zA-Z0-9]+)".*?', line)
+                break
+
         self.cnt = Counter()
         for i in self.imageIDs:
             self.cnt[i[1]] += 1
